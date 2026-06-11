@@ -202,7 +202,44 @@ footer {
 /* Fade in animation */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeIn .3s ease; }
-</style>
+/* Donation Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 999; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 16px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 20px; padding: 32px 24px 24px;
+  max-width: 400px; width: 100%; position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: fadeIn .3s ease;
+  text-align: center;
+}
+.modal-close {
+  position: absolute; top: 12px; right: 16px; background: none;
+  border: none; font-size: 22px; cursor: pointer; color: #94a3b8;
+  padding: 4px 8px; border-radius: 8px; transition: all .2s;
+}
+.modal-close:hover { background: #f1f5f9; color: #475569; }
+.modal h3 { font-size: 20px; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+.qr-grid { display: flex; gap: 16px; justify-content: center; }
+.qr-item { text-align: center; }
+.qr-placeholder {
+  width: 150px; height: 150px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #64748b; margin-bottom: 8px;
+  border: 2px dashed #e2e8f0; background: #f8fafc;
+  transition: all .3s;
+}
+.qr-placeholder img { width: 150px; height: 150px; border-radius: 8px; object-fit: contain; }
+.qr-placeholder.has-qr { border: none; background: #fff; }
+.qr-label { font-size: 13px; font-weight: 500; color: #1e293b; }
+.modal-footer { margin-top: 16px; font-size: 11px; color: #94a3b8; line-height: 1.6; }
+.modal-footer code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+@media (max-width: 420px) {
+  .qr-placeholder, .qr-placeholder img { width: 120px; height: 120px; }
+}</style>
 </head>
 <body>
 
@@ -642,3 +679,5 @@ document.addEventListener('paste', (e) => {
 </script>
 </body>
 </html>
+
+
