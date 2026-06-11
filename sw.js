@@ -1,4 +1,4 @@
-﻿const CACHE = "motion2mp4-v1";
+﻿const CACHE = "dynamic-photo-v1";
 const URLS = ["index.html", "manifest.json"];
 
 self.addEventListener("install", (e) => {

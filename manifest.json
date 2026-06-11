@@ -1,6 +1,6 @@
 ﻿{
-  "name": "Motion2MP4 - 手机动态照片转MP4",
-  "short_name": "Motion2MP4",
+  "name": "DynamicPhoto - 手机动态照片转MP4",
+  "short_name": "DynamicPhoto",
   "description": "免费在线将手机动态照片转为MP4视频，浏览器内处理，不上传服务器",
   "start_url": "index.html",
   "display": "standalone",

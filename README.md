@@ -1,4 +1,4 @@
-﻿# Dynamic-photoMP4 📷➜🎬
+﻿# DynamicPhoto 📷➜🎬
 
 **手机动态照片 → MP4 视频 · 纯浏览器处理 · 不上传服务器**
 
@@ -15,7 +15,7 @@
 
 ```
 1. 在 GitHub 创建新仓库
-2. 把 motion2mp4/ 里所有文件推上去
+2. 把 DynamicPhoto/ 里所有文件推上去
 3. 仓库 Settings → Pages → 选 main 分支
 4. 等待 2 分钟，你的网址就上线了！
 ```
@@ -24,14 +24,14 @@
 
 ```
 1. 安装 Vercel CLI: npm i -g vercel
-2. cd motion2mp4 && vercel --prod
+2. cd DynamicPhoto && vercel --prod
 3. 搞定，自动 HTTPS
 ```
 
 ### 方案三：Netlify
 
 ```
-直接把 motion2mp4/ 文件夹拖到 https://app.netlify.com/drop
+直接把 DynamicPhoto/ 文件夹拖到 https://app.netlify.com/drop
 ```
 
 ---
@@ -76,7 +76,7 @@ Pro 版可通过以下方式实现：
 ## 📂 文件结构
 
 ```
-motion2mp4/
+DynamicPhoto/
 ├── index.html      # 主页面（全部 UI + 转换引擎）
 ├── manifest.json   # PWA 配置（可安装到手机/桌面）
 └── sw.js           # 离线缓存服务
