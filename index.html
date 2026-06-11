@@ -1,0 +1,644 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6366f1">
+<meta name="description" content="免费在线将手机动态照片(Live Photo/Motion Photo)转换为MP4视频，浏览器内处理，不上传服务器">
+<title>Motion2MP4 - 手机动态照片转MP4</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236366f1'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='white'%3E📷%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #eef2ff;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --radius: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+
+/* Header */
+header {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; padding: 20px 16px 40px; text-align: center;
+  position: relative; overflow: hidden;
+}
+header::before {
+  content: ""; position: absolute; width: 300px; height: 300px;
+  background: rgba(255,255,255,.05); border-radius: 50%;
+  top: -100px; right: -80px;
+}
+header h1 { font-size: 28px; font-weight: 700; letter-spacing: -.5px; position: relative; }
+header p { font-size: 14px; opacity: .85; margin-top: 4px; position: relative; }
+.badge {
+  display: inline-block; background: rgba(255,255,255,.2); border-radius: 20px;
+  padding: 2px 12px; font-size: 11px; margin-top: 8px; backdrop-filter: blur(4px);
+  position: relative;
+}
+
+/* Container */
+.container { max-width: 720px; margin: -20px auto 0; padding: 0 16px 40px; position: relative; z-index: 1; flex: 1; }
+
+/* Drop Zone */
+.drop-zone {
+  background: var(--card); border: 2px dashed var(--border);
+  border-radius: var(--radius); padding: 48px 24px; text-align: center;
+  cursor: pointer; transition: all .3s; box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--primary); background: var(--primary-light);
+  box-shadow: var(--shadow-lg);
+}
+.drop-zone-icon { font-size: 48px; margin-bottom: 12px; }
+.drop-zone h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.drop-zone p { color: var(--text-secondary); font-size: 13px; }
+.drop-zone .hint { margin-top: 12px; font-size: 12px; color: var(--text-secondary); }
+.drop-zone .hint span {
+  display: inline-block; background: var(--bg); padding: 2px 10px;
+  border-radius: 6px; margin: 2px; font-family: monospace; font-size: 11px;
+}
+
+/* Stats Bar */
+.stats-bar {
+  background: var(--card); border-radius: var(--radius); padding: 16px 20px;
+  box-shadow: var(--shadow); margin-bottom: 20px;
+  display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;
+}
+.stats-bar.show { display: grid; }
+.stat-item .num { font-size: 24px; font-weight: 700; color: var(--primary); }
+.stat-item .label { font-size: 12px; color: var(--text-secondary); }
+
+/* File List */
+.file-list { display: none; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.file-list.show { display: flex; }
+.file-item {
+  background: var(--card); border-radius: 12px; padding: 12px 16px;
+  box-shadow: var(--shadow); display: grid;
+  grid-template-columns: 1fr auto auto; align-items: center; gap: 12px;
+  transition: all .3s;
+}
+.file-item .name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .size { font-size: 11px; color: var(--text-secondary); }
+.file-item .status { font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 10px; white-space: nowrap; }
+.status-waiting { color: var(--text-secondary); background: var(--bg); }
+.status-processing { color: var(--primary); background: var(--primary-light); }
+.status-done { color: var(--success); background: #f0fdf4; }
+.status-skip { color: var(--warning); background: #fffbeb; }
+.file-item .download-btn {
+  background: var(--primary); color: #fff; border: none; padding: 4px 12px;
+  border-radius: 8px; font-size: 12px; cursor: pointer; display: none;
+  transition: background .2s;
+}
+.file-item .download-btn:hover { background: var(--primary-dark); }
+
+/* Convert All Button */
+.btn-convert-all {
+  display: none; width: 100%; padding: 14px; background: var(--primary);
+  color: #fff; border: none; border-radius: 12px; font-size: 16px;
+  font-weight: 600; cursor: pointer; transition: all .2s; margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(99,102,241,.4);
+}
+.btn-convert-all:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-convert-all:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-convert-all.show { display: block; }
+.btn-convert-all .count { background: rgba(255,255,255,.2); border-radius: 10px; padding: 1px 8px; margin-left: 6px; font-size: 13px; }
+
+/* Download All */
+.download-all-bar {
+  display: none; gap: 8px; margin-bottom: 20px;
+}
+.download-all-bar.show { display: flex; }
+.download-all-btn {
+  flex: 1; padding: 12px; background: var(--success); color: #fff;
+  border: none; border-radius: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .2s; text-align: center;
+}
+.download-all-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* Info Section */
+.info-section {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow);
+}
+.info-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.support-list { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.support-item {
+  background: var(--bg); border-radius: 8px; padding: 8px 12px;
+  font-size: 13px; display: flex; align-items: center; gap: 6px;
+}
+.privacy-note {
+  display: flex; align-items: center; gap: 8px;
+  background: #f0fdf4; border-radius: 10px; padding: 12px 16px;
+  font-size: 13px; color: #166534;
+}
+
+/* Support / Donation */
+.support-section {
+  margin-top: 20px; text-align: center;
+  padding: 20px; background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.support-section h3 { font-size: 15px; margin-bottom: 4px; }
+.support-section p { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+.donate-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fef3c7; color: #92400e; border: 1px solid #fde68a;
+  padding: 8px 20px; border-radius: 10px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.donate-btn:hover { background: #fde68a; }
+
+/* Footer */
+footer {
+  text-align: center; padding: 20px; font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 12px;
+  font-size: 14px; z-index: 1000; opacity: 0; transition: all .4s;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* Progress bar */
+.progress-bar-wrap {
+  height: 3px; background: var(--border); border-radius: 4px;
+  overflow: hidden; margin-top: 16px; display: none;
+}
+.progress-bar-wrap.show { display: block; }
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  width: 0%; transition: width .3s; border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  header h1 { font-size: 22px; }
+  .drop-zone { padding: 32px 16px; }
+  .drop-zone-icon { font-size: 36px; }
+  .file-item { grid-template-columns: 1fr auto; }
+  .file-item .size { display: none; }
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+}
+
+/* Fade in animation */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn .3s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📷 Motion2MP4</h1>
+  <p>手机动态照片 → MP4 视频 · 纯浏览器处理 · 不上传服务器</p>
+  <span class="badge">🔒 隐私安全 · 文件不离机</span>
+</header>
+
+<div class="container">
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">📁</div>
+    <h2>拖放照片到这里</h2>
+    <p>或点击选择文件</p>
+    <div class="hint">
+      支持 <span>.HEIC</span> <span>.MOV</span> <span>.JPG</span> <span>.JPEG</span>
+    </div>
+  </div>
+  <input type="file" id="fileInput" multiple accept=".heic,.heif,.mov,.jpg,.jpeg" style="display:none">
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item"><div class="num" id="statTotal">0</div><div class="label">总计</div></div>
+    <div class="stat-item"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
+    <div class="stat-item"><div class="num" id="statSize">0MB</div><div class="label">输出大小</div></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar-wrap" id="progressWrap">
+    <div class="progress-bar-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Convert All Button -->
+  <button class="btn-convert-all" id="btnConvertAll">🚀 开始转换 <span class="count" id="convertCount">0</span></button>
+
+  <!-- Download All -->
+  <div class="download-all-bar" id="downloadAllBar">
+    <button class="download-all-btn" id="btnDownloadAll">📥 全部下载</button>
+  </div>
+
+  <!-- File List -->
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Info -->
+  <div class="info-section">
+    <h3>📱 支持格式</h3>
+    <div class="support-list">
+      <span class="support-item">🍎 iPhone 实况照片<br><small>.HEIC + .MOV → .mp4</small></span>
+      <span class="support-item">📱 小米动态照片<br><small>MVIMG_.jpg → .mp4</small></span>
+      <span class="support-item">🤖 Android 动态照片<br><small>.JPG(含嵌入视频) → .mp4</small></span>
+    </div>
+    <div class="privacy-note">
+      🔒 所有处理在浏览器本地完成，文件不会上传到任何服务器，请放心使用。
+    </div>
+  </div>
+
+  <!-- Support Section -->
+  <div class="support-section" id="supportSection">
+    <h3>☕ 支持我们</h3>
+    <p>如果这个工具帮到了你，欢迎请开发者喝杯咖啡 ❤️</p>
+    <button class="donate-btn" id="donateBtn">☕ 请喝咖啡</button>
+  </div>
+</div>
+
+<footer>
+  Motion2MP4 · 纯前端工具 · 文件不上传服务器<br>
+  遇到问题？长按图片拖进来试试
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============= 核心转换引擎 =============
+
+function detectType(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.heic') || name.endsWith('.heif')) return 'iphone_still';
+  if (name.endsWith('.mov')) return 'mov';
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) {
+    // MVIMG prefix = Xiaomi Motion Photo
+    if (name.startsWith('mvimg')) return 'xiaomi_motion';
+    return 'jpeg_unknown';
+  }
+  return 'unknown';
+}
+
+async function convertFile(file) {
+  const type = detectType(file);
+
+  if (type === 'iphone_still') {
+    // iPhone Live Photo still image - need to find the paired MOV
+    // Show a message that the user needs to also upload the .MOV file
+    return { success: false, error: '需要配套的 .MOV 文件，请同时上传', skip: true };
+  }
+
+  if (type === 'mov') {
+    return convertMOVtoMP4(file);
+  }
+
+  if (type === 'xiaomi_motion' || type === 'jpeg_unknown') {
+    return extractMP4fromJPEG(file);
+  }
+
+  return { success: false, error: '不支持的文件格式', skip: true };
+}
+
+async function convertMOVtoMP4(file) {
+  const buffer = await file.arrayBuffer();
+  const data = new Uint8Array(buffer);
+
+  // Check if it has ftyp box
+  if (data.length < 12) return { success: false, error: '文件太短' };
+
+  const ftyp = String.fromCharCode(...data.slice(4, 8));
+  if (ftyp !== 'ftyp') return { success: false, error: '不是有效的 MOV/MP4 文件' };
+
+  const majorBrand = String.fromCharCode(...data.slice(8, 12));
+  // Fix MOV brands
+  if (majorBrand === 'qt  ' || majorBrand === 'MSNV') {
+    // Change major brand to mp42
+    data[8] = 0x6d; data[9] = 0x70; data[10] = 0x34; data[11] = 0x32; // 'mp42'
+    // Replace all 'qt  ' with 'isom' in compatible brands
+    for (let i = 0; i < data.length - 3; i++) {
+      if (data[i] === 0x71 && data[i+1] === 0x74 && data[i+2] === 0x20 && data[i+3] === 0x20) {
+        data[i] = 0x69; data[i+1] = 0x73; data[i+2] = 0x6f; data[i+3] = 0x6d; // 'isom'
+      }
+    }
+  }
+
+  const mp4Blob = new Blob([data], { type: 'video/mp4' });
+  return { success: true, blob: mp4Blob, name: file.name.replace(/\.mov$/i, '.mp4') };
+}
+
+async function extractMP4fromJPEG(file) {
+  const buffer = await file.arrayBuffer();
+  const data = new Uint8Array(buffer);
+
+  // Search for 'ftyp' magic bytes
+  const ftypBytes = [0x66, 0x74, 0x79, 0x70]; // 'ftyp'
+  const ftyp2Bytes = [0x46, 0x59, 0x54, 0x70]; // 'FYTp'
+
+  let mp4Start = -1;
+
+  for (let i = 0; i < data.length - 4; i++) {
+    const b1 = data[i], b2 = data[i+1], b3 = data[i+2], b4 = data[i+3];
+    // Check for 'ftyp'
+    if (b1 === 0x66 && b2 === 0x74 && b3 === 0x79 && b4 === 0x70) {
+      const boxSize = (data[i-4] << 24) | (data[i-3] << 16) | (data[i-2] << 8) | data[i-1];
+      if (boxSize >= 8 && boxSize <= 200) {
+        mp4Start = i - 4;
+        break;
+      }
+    }
+    // Check for 'FYTp'
+    if (b1 === 0x46 && b2 === 0x59 && b3 === 0x54 && b4 === 0x70) {
+      mp4Start = i - 4;
+      break;
+    }
+  }
+
+  // Fallback: just find 'ftyp' anywhere
+  if (mp4Start === -1) {
+    const idx = new TextDecoder().decode(data).indexOf('ftyp');
+    if (idx > 0) mp4Start = idx - 4;
+  }
+
+  if (mp4Start < 0) {
+    return { success: false, error: '未检测到嵌入视频（非动态照片）', skip: true };
+  }
+
+  // Extract MP4 data
+  const mp4Data = data.slice(mp4Start);
+  // Ensure ftyp brand is valid
+  if (mp4Data.length >= 12) {
+    const brand = String.fromCharCode(...mp4Data.slice(8, 12));
+    if (brand === 'qt  ') {
+      mp4Data[8] = 0x6d; mp4Data[9] = 0x70; mp4Data[10] = 0x34; mp4Data[11] = 0x32;
+    }
+  }
+
+  const mp4Blob = new Blob([mp4Data], { type: 'video/mp4' });
+  return { success: true, blob: mp4Blob, name: file.name.replace(/\.jpe?g$/i, '.mp4') };
+}
+
+// ============= UI 逻辑 =============
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const btnConvertAll = document.getElementById('btnConvertAll');
+const convertCount = document.getElementById('convertCount');
+const statsBar = document.getElementById('statsBar');
+const statTotal = document.getElementById('statTotal');
+const statDone = document.getElementById('statDone');
+const statSize = document.getElementById('statSize');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const downloadAllBar = document.getElementById('downloadAllBar');
+const btnDownloadAll = document.getElementById('btnDownloadAll');
+const toast = document.getElementById('toast');
+const donateBtn = document.getElementById('donateBtn');
+
+let files = [];
+let convertedCount = 0;
+let totalOutputSize = 0;
+
+// Drag & Drop
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFiles(fileInput.files);
+  fileInput.value = '';
+});
+
+function handleFiles(fileList_) {
+  const newFiles = [];
+  for (const f of fileList_) {
+    const type = detectType(f);
+    if (type !== 'unknown') {
+      // Check duplicates
+      if (!files.some(ex => ex.file.name === f.name && ex.file.size === f.size)) {
+        newFiles.push({
+          file: f,
+          status: 'waiting',
+          result: null,
+          type: type,
+          id: Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+        });
+      }
+    }
+  }
+  if (newFiles.length === 0) {
+    showToast('没有新的可转换文件');
+    return;
+  }
+  files = [...files, ...newFiles];
+  renderFileList();
+  updateStats();
+  showToast(`已添加 ${newFiles.length} 个文件`);
+}
+
+function renderFileList() {
+  fileList.classList.add('show');
+  fileList.innerHTML = '';
+  let convertible = 0;
+
+  files.forEach((f, idx) => {
+    if (f.status === 'waiting' || f.status === 'skip') convertible++;
+
+    const item = document.createElement('div');
+    item.className = 'file-item fade-in';
+    item.dataset.id = f.id;
+
+    const sizeKB = Math.round(f.file.size / 1024);
+    const sizeStr = sizeKB > 1024 ? (sizeKB/1024).toFixed(1) + 'MB' : sizeKB + 'KB';
+
+    const statusMap = {
+      waiting: ['等待转换', 'status-waiting'],
+      processing: ['转换中...', 'status-processing'],
+      done: ['已完成 ✓', 'status-done'],
+      skip: ['已跳过', 'status-skip'],
+      error: ['转换失败', 'status-skip'],
+    };
+    const [statusText, statusClass] = statusMap[f.status] || ['未知', 'status-waiting'];
+
+    const showDownload = f.status === 'done' && f.result?.success;
+
+    item.innerHTML = `
+      <div>
+        <div class="name">${escHtml(f.file.name)}</div>
+        <div class="size">${sizeStr}</div>
+      </div>
+      <span class="status ${statusClass}">${statusText}</span>
+      <button class="download-btn" data-id="${f.id}" style="${showDownload ? 'display:block' : 'display:none'}">下载</button>
+    `;
+
+    fileList.appendChild(item);
+
+    if (showDownload) {
+      item.querySelector('.download-btn').addEventListener('click', () => downloadFile(f));
+    }
+  });
+
+  // Update convert button
+  const waiting = files.filter(f => f.status === 'waiting').length;
+  if (waiting > 0) {
+    btnConvertAll.classList.add('show');
+    btnConvertAll.disabled = false;
+    convertCount.textContent = waiting;
+  } else if (files.every(f => f.status === 'done' || f.status === 'skip' || f.status === 'error')) {
+    btnConvertAll.classList.remove('show');
+  }
+
+  // Update download all
+  const doneCount = files.filter(f => f.status === 'done').length;
+  if (doneCount > 0) {
+    downloadAllBar.classList.add('show');
+  }
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Convert All
+btnConvertAll.addEventListener('click', async () => {
+  const toConvert = files.filter(f => f.status === 'waiting');
+  if (toConvert.length === 0) return;
+
+  btnConvertAll.disabled = true;
+  btnConvertAll.textContent = '⏳ 转换中...';
+  progressWrap.classList.add('show');
+
+  let completed = 0;
+  const total = toConvert.length;
+
+  for (const f of toConvert) {
+    f.status = 'processing';
+    renderFileList();
+
+    try {
+      const result = await convertFile(f.file);
+      f.result = result;
+      if (result.success) {
+        f.status = 'done';
+        convertedCount++;
+        totalOutputSize += result.blob.size;
+      } else {
+        f.status = result.skip ? 'skip' : 'error';
+      }
+    } catch (e) {
+      f.status = 'error';
+      f.result = { success: false, error: e.message };
+    }
+
+    completed++;
+    progressFill.style.width = `${(completed / total) * 100}%`;
+    updateStats();
+    renderFileList();
+  }
+
+  progressFill.style.width = '100%';
+  btnConvertAll.classList.remove('show');
+  showToast(`转换完成！共 ${convertedCount} 个文件`);
+  updateStats();
+});
+
+// Download individual
+function downloadFile(f) {
+  if (!f.result?.success) return;
+  const url = URL.createObjectURL(f.result.blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = f.result.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// Download All
+btnDownloadAll.addEventListener('click', async () => {
+  const doneFiles = files.filter(f => f.status === 'done');
+  if (doneFiles.length === 0) return;
+
+  if (doneFiles.length === 1) {
+    downloadFile(doneFiles[0]);
+    return;
+  }
+
+  // Multiple files - download one by one with slight delay
+  showToast(`正在下载 ${doneFiles.length} 个文件...`);
+  for (let i = 0; i < doneFiles.length; i++) {
+    setTimeout(() => downloadFile(doneFiles[i]), i * 300);
+  }
+});
+
+function updateStats() {
+  statsBar.classList.add('show');
+  statTotal.textContent = files.length;
+  statDone.textContent = files.filter(f => f.status === 'done').length;
+
+  const mb = (totalOutputSize / (1024*1024)).toFixed(1);
+  statSize.textContent = mb + 'MB';
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Donate
+donateBtn.addEventListener('click', () => {
+  const methods = [
+    { name: '微信支付', icon: '💳' },
+    { name: '支付宝', icon: '💳' },
+  ];
+  const m = methods[Math.floor(Math.random() * methods.length)];
+  showToast(`感谢你的支持！❤️ 你可以通过 ${m.icon} ${m.name} 向开发者转账`);
+  alert(
+    '感谢支持！❤️\n\n' +
+    '目前你可以通过以下方式支持我们：\n' +
+    '1. 微信支付 / 支付宝\n' +
+    '2. 分享给需要的朋友\n' +
+    '3. 在 GitHub 上给我们 Star ⭐\n\n' +
+    '你的支持是开源项目持续的动力！'
+  );
+});
+
+// Init - handle pasted files
+document.addEventListener('paste', (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  const imageFiles = [];
+  for (const item of items) {
+    if (item.kind === 'file') imageFiles.push(item.getAsFile());
+  }
+  if (imageFiles.length) handleFiles(imageFiles);
+});
+</script>
+</body>
+</html>
