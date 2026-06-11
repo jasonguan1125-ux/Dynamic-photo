@@ -189,6 +189,30 @@ footer {
   width: 0%; transition: width .3s; border-radius: 4px;
 }
 
+/* Mobile Upload Buttons */
+.mobile-btns {
+  display: none; gap: 10px; justify-content: center;
+  margin-top: 16px; flex-wrap: wrap;
+}
+.mobile-btns.show { display: flex; }
+.mobile-btn {
+  padding: 12px 24px; border-radius: 12px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  background: var(--primary); color: #fff;
+  transition: all .2s; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.mobile-btn:active { transform: scale(.96); }
+.mobile-btn.secondary {
+  background: var(--card); color: var(--text); border: 1.5px solid var(--border);
+}
+#dropZone.mobile-mode {
+  border-style: solid; padding: 28px 20px;
+}
+#dropZone.mobile-mode .drop-zone-icon { font-size: 36px; margin-bottom: 8px; }
+#dropZone.mobile-mode h2 { font-size: 16px; }
+#dropZone.mobile-mode p { font-size: 12px; }
+
 /* Responsive */
 @media (max-width: 480px) {
   header h1 { font-size: 22px; }
@@ -239,6 +263,16 @@ footer {
 .modal-footer code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
 @media (max-width: 420px) {
   .qr-placeholder, .qr-placeholder img { width: 120px; height: 120px; }
+}/* Mobile Upload Buttons */
+
+
+/* Download on mobile */
+@media (max-width: 640px) {
+  .mobile-btns.show { display: flex; }
+  .file-item { grid-template-columns: 1fr auto; padding: 10px 12px; }
+  .file-item .name { font-size: 12px; }
+  .btn-convert-all { font-size: 15px; padding: 12px; }
+  .download-all-btn { font-size: 13px; padding: 10px; }
 }</style>
 </head>
 <body>
@@ -251,18 +285,21 @@ footer {
 
 <div class="container">
 
-  <!-- Drop Zone -->
-  <div class="drop-zone" id="dropZone">
-    <div class="drop-zone-icon">📁</div>
-    <h2>拖放照片到这里</h2>
-    <p>或点击选择文件</p>
+  <!-- Upload Area -->
+  <div class="drop-zone" id="dropZone" role="button" tabindex="0">
+    <div class="drop-zone-icon" id="dropIcon">📁</div>
+    <h2 id="dropTitle">选择或拖放照片</h2>
+    <p id="dropDesc">点击下方按钮选择文件</p>
+    <div class="mobile-btns" id="mobileBtns">
+      <button class="mobile-btn" id="btnGallery">📱 从相册选择</button>
+      <button class="mobile-btn secondary" id="btnCamera">📸 拍照</button>
+    </div>
     <div class="hint">
       支持 <span>.HEIC</span> <span>.MOV</span> <span>.JPG</span> <span>.JPEG</span>
     </div>
   </div>
-  <input type="file" id="fileInput" multiple accept=".heic,.heif,.mov,.jpg,.jpeg" style="display:none">
-
-  <!-- Stats -->
+  <input type="file" id="fileInput" multiple accept="image/*,.heic,.heif,.mov,.jpg,.jpeg" style="display:none">
+  <input type="file" id="cameraInput" accept="image/*" style="display:none" capture="environment"><!-- Stats -->
   <div class="stats-bar" id="statsBar">
     <div class="stat-item"><div class="num" id="statTotal">0</div><div class="label">总计</div></div>
     <div class="stat-item"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
@@ -302,7 +339,26 @@ footer {
   <div class="support-section" id="supportSection">
     <h3>☕ 支持我们</h3>
     <p>如果这个工具帮到了你，欢迎请开发者喝杯咖啡 ❤️</p>
-    <button class="donate-btn" id="donateBtn">☕ 请喝咖啡</button>
+    <button class="donate-btn" id="donateBtn">🎁 赞赏支持</button>
+  <!-- Donate Modal -->
+  <div class="modal-overlay" id="donateModal">
+    <div class="modal">
+      <button class="modal-close" id="donateClose">✕</button>
+      <h3>☕ 赞赏支持</h3>
+      <p class="modal-sub">你的支持是持续更新的动力 ❤️</p>
+      <div class="qr-grid">
+        <div class="qr-item">
+          <div class="qr-placeholder" id="qrWechat"><span>微信收款码</span></div>
+          <p class="qr-label">微信支付</p>
+        </div>
+        <div class="qr-item">
+          <div class="qr-placeholder" id="qrAlipay"><span>支付宝收款码</span></div>
+          <p class="qr-label">支付宝</p>
+        </div>
+      </div>
+      <p class="modal-footer">替换说明：将你的收款码保存为 <code>wechat-qr.png</code> 和 <code>alipay-qr.png</code>，<br>上传到同级目录即可自动显示</p>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -427,6 +483,18 @@ async function extractMP4fromJPEG(file) {
 }
 
 // ============= UI 逻辑 =============
+
+// Detect mobile device
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 0 && window.innerWidth < 768);
+}
+
+// Detect mobile device
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 0 && window.innerWidth < 768);
+}
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -615,6 +683,30 @@ function downloadFile(f) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+// Download with mobile share support
+function downloadFileMobile(f) {
+  if (!f.result?.success) return;
+  const url = URL.createObjectURL(f.result.blob);
+  if (isMobile() && navigator.share) {
+    fetch(url).then(r => r.blob()).then(blob => {
+      const file = new File([blob], f.result.name, { type: "video/mp4" });
+      navigator.share({ files: [file], title: f.result.name }).catch(() => {
+        fallbackDownload(url, f.result.name);
+      });
+    });
+    return;
+  }
+  fallbackDownload(url, f.result.name);
+}
+
+function fallbackDownload(url, name) {
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 // Download All
 btnDownloadAll.addEventListener('click', async () => {
   const doneFiles = files.filter(f => f.status === 'done');
@@ -649,22 +741,54 @@ function showToast(msg) {
 }
 
 // Donate
+const donateModal = document.getElementById('donateModal');
+const donateClose = document.getElementById('donateClose');
+
 donateBtn.addEventListener('click', () => {
-  const methods = [
-    { name: '微信支付', icon: '💳' },
-    { name: '支付宝', icon: '💳' },
-  ];
-  const m = methods[Math.floor(Math.random() * methods.length)];
-  showToast(`感谢你的支持！❤️ 你可以通过 ${m.icon} ${m.name} 向开发者转账`);
-  alert(
-    '感谢支持！❤️\n\n' +
-    '目前你可以通过以下方式支持我们：\n' +
-    '1. 微信支付 / 支付宝\n' +
-    '2. 分享给需要的朋友\n' +
-    '3. 在 GitHub 上给我们 Star ⭐\n\n' +
-    '你的支持是开源项目持续的动力！'
-  );
+  const wechatImg = document.getElementById('qrWechat');
+  const alipayImg = document.getElementById('qrAlipay');
+  const wImg = new Image();
+  wImg.onload = () => { wechatImg.innerHTML = ''; wechatImg.appendChild(wImg); wechatImg.classList.add('has-qr'); };
+  wImg.onerror = () => { wechatImg.innerHTML = '<span>微信收款码</span>'; wechatImg.classList.remove('has-qr'); };
+  wImg.src = 'wechat-qr.png?' + Date.now(); if (wImg.complete && wImg.naturalWidth === 0) { wImg.src = 'wechat-qr.jpg?' + Date.now(); }
+  const aImg = new Image();
+  aImg.onload = () => { alipayImg.innerHTML = ''; alipayImg.appendChild(aImg); alipayImg.classList.add('has-qr'); };
+  aImg.onerror = () => { alipayImg.innerHTML = '<span>支付宝收款码</span>'; alipayImg.classList.remove('has-qr'); };
+  aImg.src = 'alipay-qr.png?' + Date.now(); if (aImg.complete && aImg.naturalWidth === 0) { aImg.src = 'alipay-qr.jpg?' + Date.now(); }
+  donateModal.classList.add('show');
 });
+donateClose.addEventListener('click', () => donateModal.classList.remove('show'));
+donateModal.addEventListener('click', (e) => { if (e.target === donateModal) donateModal.classList.remove('show'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') donateModal.classList.remove('show'); });
+// Mobile UI init
+if (isMobile()) {
+  document.getElementById('dropZone').classList.add('mobile-mode');
+  document.getElementById('mobileBtns').classList.add('show');
+  document.getElementById('dropTitle').textContent = '选择照片';
+  document.getElementById('dropDesc').textContent = '点击按钮从相册选择';
+  document.getElementById('dropIcon').textContent = '📱';
+}
+
+// Camera button
+document.getElementById('btnCamera').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('cameraInput').click(); });
+
+// Gallery button
+document.getElementById('btnGallery').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('fileInput').click(); });
+
+// Mobile UI init
+if (isMobile()) {
+  document.getElementById('dropZone').classList.add('mobile-mode');
+  document.getElementById('mobileBtns').classList.add('show');
+  document.getElementById('dropTitle').textContent = '选择照片';
+  document.getElementById('dropDesc').textContent = '点击按钮从相册选择';
+  document.getElementById('dropIcon').textContent = '📱';
+}
+
+// Camera button
+document.getElementById('btnCamera').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('cameraInput').click(); });
+
+// Gallery button
+document.getElementById('btnGallery').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('fileInput').click(); });
 
 // Init - handle pasted files
 document.addEventListener('paste', (e) => {
@@ -676,8 +800,21 @@ document.addEventListener('paste', (e) => {
   }
   if (imageFiles.length) handleFiles(imageFiles);
 });
-</script>
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}</script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
