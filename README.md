@@ -63,12 +63,4 @@ DynamicPhoto/
 - **Android Motion Photo**: 在 JPEG 文件中搜索 `ftyp` magic bytes，定位嵌入的 MP4 数据起始位置并提取
 - 纯 JavaScript + File API，无需任何后端
 
----
-
-## 📈 推广建议
-
-1. 发布到 **小众软件** / **知乎** / **小红书** 等平台
-2. 视频教程："手机动态照片怎么转成视频？在线免费工具"
-3. 在 GitHub 加话题标签：`#livephoto` `#motionphoto` `#converter`
-4. 在 Product Hunt 提交
 
